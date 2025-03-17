@@ -1,0 +1,72 @@
+import random
+
+# Data kurs tukar mata uang (dalam USD)
+currency_rates = {
+    "USD": 1.0,
+    "EUR": 1.1,
+    "IDR": 0.000065
+}
+
+class BankAccount:
+    def __init__(self, account_holder, balance, currency):
+        self.account_holder = account_holder
+        self.balance = balance
+        self.currency = currency.upper()
+        if self.currency not in currency_rates:
+            raise ValueError("Unsupported currency type")
+
+    def convert_currency(self, amount, from_currency, to_currency):
+        """Konversi mata uang berdasarkan kurs tetap"""
+        if from_currency not in currency_rates or to_currency not in currency_rates:
+            raise ValueError("Invalid currency for conversion")
+        amount_in_usd = amount / currency_rates[from_currency]
+        return amount_in_usd * currency_rates[to_currency]
+
+    def __add__(self, other):
+        if not isinstance(other, BankAccount):
+            raise TypeError("Can only add another BankAccount object")
+        converted_balance = self.convert_currency(other.balance, other.currency, self.currency)
+        return BankAccount(self.account_holder, self.balance + converted_balance, self.currency)
+
+    def __sub__(self, other):
+        if not isinstance(other, BankAccount):
+            raise TypeError("Can only subtract another BankAccount object")
+        converted_balance = self.convert_currency(other.balance, other.currency, self.currency)
+        new_balance = self.balance - converted_balance
+        if new_balance < 0:
+            raise ValueError("Insufficient funds")
+        return BankAccount(self.account_holder, new_balance, self.currency)
+
+    def apply_interest(self):
+        """Menambahkan bunga tahunan berdasarkan saldo"""
+        interest_rate = 0.02 if self.balance > 5000 else 0.01
+        self.balance += self.balance * interest_rate
+        
+    def check_balance(self):
+        if self.balance < 50:  # Anggap 50 sebagai batas saldo rendah
+            print("Warning: Low Balance!")
+        return self.balance
+    
+    def __str__(self):
+        return f"Account Holder: {self.account_holder}\nBalance: {self.balance:.2f} {self.currency}"
+
+# Contoh penggunaan
+if __name__ == "__main__":
+    # Skenario 1: John mendapatkan bunga
+    john = BankAccount("John", 5000, "USD")
+    print(f"John's Account: Initial Balance = ${john.balance}")
+    john.apply_interest()
+    print(f"Applying interest... New Balance = ${john.balance}")
+    
+    # Skenario 2: Emily ingin menarik uang setelah konversi
+    emily = BankAccount("Emily", 1000, "EUR")
+    print(f"\nEmily's Account: Initial Balance = €{emily.balance}")
+    converted_amount = emily.convert_currency(emily.balance, "EUR", "USD")
+    print(f"Converted to USD: ${converted_amount:.2f}")
+    
+    try:
+        emily = emily - BankAccount("", 1200, "USD")
+    except ValueError:
+        print("Insufficient balance for withdrawal!")
+    
+    print(f"Emily's Account: Balance remains at €{emily.balance}")
